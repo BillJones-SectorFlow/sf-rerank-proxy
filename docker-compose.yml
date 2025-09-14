@@ -1,0 +1,38 @@
+# Use Python 3.9 as the base image
+FROM python:3.9-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the app code and .env
+COPY . .
+
+# Expose port 33332
+EXPOSE 33332
+
+# Run Uvicorn with 4 workers for parallel handling
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "33332", "--workers", "4", "--loop", "uvloop"]
+root@ip-172-31-25-92:/workspace/fastapi-rerank-proxy# cat docker-compose.yml
+services:
+  fastapi-rerank-proxy:
+    build: .
+    container_name: rerank_proxy
+    ports:
+      - "33332:33332"
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      # Attach to the shared network and assign a static IP
+      shared-r2r-net:
+        ipv4_address: 172.20.0.21
+
+# Define the network as external, using the exact name from your 'ls' command
+networks:
+  shared-r2r-net:
+    name: sf-r2r-prod_r2r-network-prod
+    external: true
